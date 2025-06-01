@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flask Posts</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; }
+        .form-group { margin-bottom: 1em; }
+        .alert { padding: 1em; margin: 1em 0; }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+        .post { border: 1px solid #ddd; padding: 1em; margin-bottom: 1em; }
+        .post-meta { color: #666; font-size: 0.9em; }
+        .like-button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+        .like-button.active {
+            background: #4CAF50;
+            color: white;
+        }
+        .post-image {
+            max-width: 100%;
+            height: auto;
+            margin: 10px 0;
+        }
+        .image-caption {
+            font-style: italic;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if current_user.is_authenticated %}
+        <h2>Olá, {{ current_user.username }}!</h2>
+        <a href="{{ url_for('routes.logout') }}">Logout</a>
+
+        <h3>Criar Post</h3>
+        <form method="POST" action="{{ url_for('routes.create_post') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <input type="text" name="title" placeholder="Título" required>
+            </div>
+            <div class="form-group">
+                <textarea name="body" placeholder="Conteúdo" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Imagem (opcional):</label>
+                <input type="file" name="image">
+            </div>
+            <div class="form-group">
+                <input type="text" name="caption" placeholder="Imagem (opcional)">
+            </div>
+            <button type="submit">Criar Post</button>
+        </form>
+
+        <h3>Todos os Posts</h3>
+        {% for post in posts %}
+            <div class="post">
+                <h4>{{ post.title }}</h4>
+                <p>{{ post.body }}</p>
+                {% if post.image %}
+                    <img src="{{ url_for('static', filename='uploads/' + post.image) }}" class="post-image">
+                    {% if post.caption %}
+                        <div class="image-caption">{{ post.caption }}</div>
+                    {% endif %}
+                {% endif %}
+                <div class="post-meta">
+                    Posted by {{ post.author.username }} on {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    {% if post.author.id == current_user.id %}
+                        <a href="{{ url_for('routes.delete_post', post_id=post.id) }}">Delete</a>
+                    {% endif %}
+                </div>
+                <form method="POST" action="{{ url_for('routes.like_post', post_id=post.id) }}">
+                    <button type="submit" class="like-button {% if post.is_liked_by(current_user) %}active{% endif %}">
+                        ❤️ Like ({{ post.like_count() }})
+                    </button>
+                </form>
+            </div>
+        {% else %}
+            <p>Ainda não há post.</p>
+        {% endfor %}
+    {% else %}
+        <h2>Login</h2>
+        <form method="POST" action="{{ url_for('routes.login') }}">
+            <div class="form-group">
+                <input type="text" name="username" placeholder="Username" required>
+            </div>
+            <div class="form-group">
+                <input type="password" name="password" placeholder="Senha" required>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+
+        <h2>Cadastro</h2>
+        <form method="POST" action="{{ url_for('routes.register') }}">
+            <div class="form-group">
+                <input type="text" name="username" placeholder="Username" required>
+            </div>
+            <div class="form-group">
+                <input type="password" name="password" placeholder="Senha" required>
+            </div>
+            <button type="submit">Cadastro</button>
+        </form>
+    {% endif %}
+</body>
+</html>
+
